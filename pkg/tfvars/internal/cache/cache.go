@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"compress/gzip"
 	"crypto/md5"
 	"crypto/sha256"
 	"fmt"
@@ -198,4 +199,30 @@ func DownloadImageFile(baseURL string) (string, error) {
 	logrus.Infof("Obtaining RHCOS image file from '%v'", baseURL)
 
 	return DownloadFile(baseURL, imageDataType)
+}
+
+// DecompressFile decompresses data in the cache
+func DecompressFile(src, dest string) error {
+	gzipfile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+
+	reader, err := gzip.NewReader(gzipfile)
+	defer reader.Close()
+	if err != nil {
+		return err
+	}
+
+	writer, err := os.Create(dest)
+	defer writer.Close()
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(writer, reader); err != nil {
+		return err
+	}
+
+	return nil
 }

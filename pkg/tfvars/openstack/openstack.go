@@ -2,10 +2,8 @@
 package openstack
 
 import (
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -83,7 +81,7 @@ func TFVars(masterConfig *v1alpha1.OpenstackProviderSpec, cloud string, external
 			if err != nil {
 				if os.IsNotExist(err) {
 					logrus.Infof("Decompress image data from %v to %v", localFilePath, localFilePathUncompressed)
-					err = decompressFile(localFilePath, localFilePathUncompressed)
+					err = cache.DecompressFile(localFilePath, localFilePathUncompressed)
 					if err != nil {
 						return nil, err
 					}
@@ -128,32 +126,6 @@ func TFVars(masterConfig *v1alpha1.OpenstackProviderSpec, cloud string, external
 	}
 
 	return json.MarshalIndent(cfg, "", "  ")
-}
-
-// decompressFile decompresses data in the cache
-func decompressFile(src, dest string) error {
-	gzipfile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-
-	reader, err := gzip.NewReader(gzipfile)
-	defer reader.Close()
-	if err != nil {
-		return err
-	}
-
-	writer, err := os.Create(dest)
-	defer writer.Close()
-	if err != nil {
-		return err
-	}
-
-	if _, err = io.Copy(writer, reader); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func validateOverriddenImageName(imageName, cloud string) error {
